@@ -1,0 +1,10 @@
+{
+  "recommendations": [
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint",
+    "tonwhales.func-vscode",
+    "bradlc.vscode-tailwindcss",
+    "csstools.postcss",
+    "clinyong.vscode-css-modules"
+  ]
+}
