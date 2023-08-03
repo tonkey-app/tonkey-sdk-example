@@ -33,7 +33,7 @@
     "ton": "^13.5.0",
     "ton3-core": "^1.0.1",
     "tonkey-gateway-typescript-sdk": "^0.0.2",
-    "tonkey-sdk-tmp": "^0.0.1",
+    "tonkey-sdk": "^1.0.0",
     "typescript": "5.1.6"
   }
 }

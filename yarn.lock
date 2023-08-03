@@ -3502,10 +3502,10 @@ tonkey-gateway-typescript-sdk@^0.0.2:
     graphql "^16.6.0"
     ton3-core "^1.0.1"
 
-tonkey-sdk-tmp@^0.0.1:
-  version "0.0.1"
-  resolved "https://registry.yarnpkg.com/tonkey-sdk-tmp/-/tonkey-sdk-tmp-0.0.1.tgz#bab3651600f2f9be46a695df3f147f2d44e28b4a"
-  integrity sha512-UWeeETU1bL6yi7HeYlQAMIx+TtM+dziZ/ax9YD6mzaPv+aWT6s+IF0QjDg2NEMKA1I4WKVTe7bPUc93oNQ0UBA==
+tonkey-sdk@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/tonkey-sdk/-/tonkey-sdk-1.0.0.tgz#6d9cb1df2828dbc7a37f1d2ddb5b9acbc52f13bc"
+  integrity sha512-dAvG2arxbINwkwNbDE65qPhxwzUq4zsVjv4Y1srccoJL/3zpvG4PfvAZmckExCTkEMhbySEQx4ahhOOdTIp/LA==
   dependencies:
     bn.js "^5.2.1"
     ton "^13.4.1"
