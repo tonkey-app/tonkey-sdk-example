@@ -105,8 +105,30 @@ export default function Home() {
       safeAddress,
     );
     console.log(payload);
+    // {
+    //   "chainId": "-3",
+    //   "ownerAddress": "kQBm6b0ORvMR2M876U7ps9Ul-i-BnmooVNb-qFwAw0TncwF0",
+    //   "signature": "2e38483977ee840fab529426306bcdcc050bf2bdacaebe4173ac976548b0f16d7b999ed14ae222f261af340579ef4a5c50591871200e22dc7a085184d16eec0b",
+    //   "queryId": "8a6392eb00000001",
+    //   "safeAddress": "EQADExxcNiblNmwHRdHPk4ZHx_bez9ylxNpJl_ZT_FLEsytZ"
+    // }
+
     const result = await signTransaction({ variables: { content: payload } });
     console.log(result);
+    // {
+    //   "data": {
+    //       "signTransaction": {
+    //           "success": false,
+    //           "error": {
+    //               "code": "10203003",
+    //               "detail": "tx was not found",
+    //               "extra": "",
+    //               "__typename": "Error"
+    //           },
+    //           "__typename": "ResBody"
+    //       }
+    //   }
+    // }
   }, [chainId, ownerAddress, queryId, safeAddress, signTransaction, signature]);
 
   return (
