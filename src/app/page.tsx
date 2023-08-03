@@ -8,17 +8,13 @@ export default function Home() {
       setChainId(event.target.value);
     };
 
-  const [safeAddress, setSafeAddress] = useState<string>(
-    '0:1d898cd7f90ae860760cb577cd59084721292a81d14c5fe31bc2bbb531bdd6c4',
-  );
+  const [safeAddress, setSafeAddress] = useState<string>('');
   const onChangeSafeAddress: React.InputHTMLAttributes<HTMLInputElement>['onChange'] =
     (event) => {
       setSafeAddress(event.target.value);
     };
 
-  const [ownerAddress, setOwnerAddress] = useState<string>(
-    'kQCmxsVr-UHBmi0lUTAFcI2q7C7zItI8czKuzjBX7yjvhdoM',
-  );
+  const [ownerAddress, setOwnerAddress] = useState<string>('');
   const onChangeOwnerAddress: React.InputHTMLAttributes<HTMLInputElement>['onChange'] =
     (event) => {
       setOwnerAddress(event.target.value);
@@ -37,17 +33,7 @@ export default function Home() {
     };
 
   const [boc, setBoc] = useState<string>('');
-  const onChangeBoc: React.InputHTMLAttributes<HTMLInputElement>['onChange'] = (
-    event,
-  ) => {
-    setBoc(event.target.value);
-  };
-
   const [queryId, setQueryId] = useState<string>('');
-  const onChangeQueryId: React.InputHTMLAttributes<HTMLInputElement>['onChange'] =
-    (event) => {
-      setQueryId(event.target.value);
-    };
 
   return (
     <main className="flex min-h-screen flex-col items-center p-24 pt-6">
@@ -93,7 +79,7 @@ export default function Home() {
       <section>
         <div>
           <label>Order Cell BOC:</label>
-          <input type="text" value={boc} onChange={onChangeBoc} />
+          <input type="text" value={boc} />
         </div>
         <button>Sign</button>
         <button>Create Transfer</button>
@@ -101,7 +87,7 @@ export default function Home() {
       <section>
         <div>
           <label>Query Id:</label>
-          <input type="text" value={queryId} onChange={onChangeQueryId} />
+          <input type="text" value={queryId} />
         </div>
         <button>Get Status</button>
         <button>Get Balance</button>
