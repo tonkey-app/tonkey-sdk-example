@@ -1,7 +1,8 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import TonWeb from 'tonweb';
-// import { MultiSig, MULTISIG_CODE_CELL } from 'tonkey-sdk';
+import * as ton3 from 'ton3-core';
+import { MultiSig } from 'tonkey-sdk';
 import { useWalletByAddress } from 'tonkey-gateway-typescript-sdk';
 
 const { Address } = TonWeb;
@@ -51,6 +52,7 @@ export default function Home() {
   const {
     safeInfo = {
       owners: [],
+      walletId: 0,
     },
   } = useWalletByAddress(safeAddress, chainId);
 
@@ -60,6 +62,12 @@ export default function Home() {
       safeInfo.owners.some(({ address }) => address.includes(rawOwnerAddress)),
     [rawOwnerAddress, safeInfo.owners],
   );
+
+  const onClickGeneratePayload = useCallback(() => {
+    const message = MultiSig.createBaseCoinTransferMessage(recipient, amount);
+    const { orderCell } = MultiSig.createOrder(safeInfo.walletId, [message]);
+    setBoc(new ton3.BOC([orderCell]).toString());
+  }, [amount, recipient, safeInfo.walletId]);
 
   return (
     <main className="flex min-h-screen flex-col items-center p-24 pt-6">
@@ -106,7 +114,7 @@ export default function Home() {
           <label>Amount:</label>
           <input type="text" value={amount} onChange={onChangeAmount} />
         </div>
-        <button>Generate Payload</button>
+        <button onClick={onClickGeneratePayload}>Generate Payload</button>
       </section>
       <section>
         <div>
@@ -114,9 +122,9 @@ export default function Home() {
           <input type="text" value={boc} />
         </div>
         <button>Sign</button>
-        <button>Create Transfer</button>
       </section>
       <section>
+        <button className="mb-6">Create Transfer</button>
         <div>
           <label>Query Id:</label>
           <input type="text" value={queryId} />
