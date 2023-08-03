@@ -33,6 +33,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <title>Examples</title>
+      </head>
       <body className={inter.className}>
         <Head>
           <title>Examples</title>
