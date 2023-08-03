@@ -3,7 +3,11 @@ import { useState, useMemo, useCallback } from 'react';
 import TonWeb from 'tonweb';
 import * as ton3 from 'ton3-core';
 import { MultiSig } from 'tonkey-sdk';
-import { useWalletByAddress } from 'tonkey-gateway-typescript-sdk';
+import {
+  useWalletByAddress,
+  useSignTransaction,
+  getSignTransactionPayload,
+} from 'tonkey-gateway-typescript-sdk';
 
 const { Address } = TonWeb;
 
@@ -12,6 +16,7 @@ const toRawAddress = (address: string) =>
 
 export default function Home() {
   const [signature, setSignature] = useState<string>('');
+  const { signTransaction } = useSignTransaction();
 
   const [chainId, setChainId] = useState<string>('-3');
   const onChangeChainId: React.InputHTMLAttributes<HTMLInputElement>['onChange'] =
@@ -61,6 +66,7 @@ export default function Home() {
     safeInfo = {
       owners: [],
       walletId: 0,
+      address: '',
     },
   } = useWalletByAddress(safeAddress, chainId);
 
@@ -73,8 +79,11 @@ export default function Home() {
 
   const onClickGeneratePayload = useCallback(() => {
     const message = MultiSig.createBaseCoinTransferMessage(recipient, amount);
-    const { orderCell } = MultiSig.createOrder(safeInfo.walletId, [message]);
+    const { orderCell, queryId } = MultiSig.createOrder(safeInfo.walletId, [
+      message,
+    ]);
     setBoc(new ton3.BOC([orderCell]).toString());
+    setQueryId(queryId);
   }, [amount, recipient, safeInfo.walletId]);
 
   const onClickSign = useCallback(async () => {
@@ -86,6 +95,18 @@ export default function Home() {
 
     setSignature(newSignature);
   }, [boc]);
+
+  const onClickCreateTransfer = useCallback(async () => {
+    const payload = await getSignTransactionPayload(
+      chainId,
+      signature,
+      ownerAddress,
+      queryId,
+      safeAddress,
+    );
+    const result = await signTransaction({ variables: { content: payload } });
+    console.log(result);
+  }, [chainId, ownerAddress, queryId, safeAddress, signTransaction, signature]);
 
   return (
     <main className="flex min-h-screen flex-col items-center p-24 pt-6">
@@ -139,21 +160,31 @@ export default function Home() {
           <label>Order Cell BOC:</label>
           <input type="text" value={boc} />
         </div>
+        <div>
+          <label>Query Id:</label>
+          <input type="text" value={queryId} />
+        </div>
         <button onClick={onClickSign}>Sign</button>
         {signature && (
           <span className="block max-w-[400px] mt-4 m-auto break-words">
             {signature}
           </span>
         )}
-      </section>
-      <section>
-        <button className="mb-6">Create Transfer</button>
-        <div>
-          <label>Query Id:</label>
-          <input type="text" value={queryId} />
+        <button className="mb-6" onClick={onClickCreateTransfer}>
+          Create Transfer
+        </button>
+        <div className="flex justify-between items-center gap-x-2">
+          <button className="m-0">Get Status</button>
+          <div className="w-[250px] m-0 pl-2 leading-[34px] bg-[#1f1f1f]/50 text-white">
+            Status:{' '}
+          </div>
         </div>
-        <button>Get Status</button>
-        <button>Get Balance</button>
+        <div className="flex justify-between items-center gap-x-2">
+          <button className="m-0">Get Balance</button>
+          <div className="w-[250px] m-0 pl-2 leading-[34px] bg-[#1f1f1f]/50 text-white">
+            Balance:{' '}
+          </div>
+        </div>
       </section>
     </main>
   );
