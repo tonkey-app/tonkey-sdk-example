@@ -15,7 +15,7 @@ div {
 }
 
 input {
-  @apply p-1 border-solid border-[1px] border-black;
+  @apply w-[250px] p-1 border-solid border-[1px] border-black;
 }
 
 button {
