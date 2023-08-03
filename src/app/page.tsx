@@ -11,31 +11,39 @@ const toRawAddress = (address: string) =>
   address && address.length === 48 ? new Address(address).toString(false) : '';
 
 export default function Home() {
+  const [signature, setSignature] = useState<string>('');
+
   const [chainId, setChainId] = useState<string>('-3');
   const onChangeChainId: React.InputHTMLAttributes<HTMLInputElement>['onChange'] =
     (event) => {
       setChainId(event.target.value);
     };
 
-  const [safeAddress, setSafeAddress] = useState<string>('');
+  const [safeAddress, setSafeAddress] = useState<string>(
+    'EQADExxcNiblNmwHRdHPk4ZHx_bez9ylxNpJl_ZT_FLEsytZ',
+  );
   const onChangeSafeAddress: React.InputHTMLAttributes<HTMLInputElement>['onChange'] =
     (event) => {
       setSafeAddress(event.target.value);
     };
 
-  const [ownerAddress, setOwnerAddress] = useState<string>('');
+  const [ownerAddress, setOwnerAddress] = useState<string>(
+    'kQBm6b0ORvMR2M876U7ps9Ul-i-BnmooVNb-qFwAw0TncwF0',
+  );
   const onChangeOwnerAddress: React.InputHTMLAttributes<HTMLInputElement>['onChange'] =
     (event) => {
       setOwnerAddress(event.target.value);
     };
 
-  const [recipient, setRecipient] = useState<string>('');
+  const [recipient, setRecipient] = useState<string>(
+    'kQBm6b0ORvMR2M876U7ps9Ul-i-BnmooVNb-qFwAw0TncwF0',
+  );
   const onChangeRecipient: React.InputHTMLAttributes<HTMLInputElement>['onChange'] =
     (event) => {
       setRecipient(event.target.value);
     };
 
-  const [amount, setAmount] = useState<string>('');
+  const [amount, setAmount] = useState<string>('0.000001');
   const onChangeAmount: React.InputHTMLAttributes<HTMLInputElement>['onChange'] =
     (event) => {
       setAmount(event.target.value);
@@ -68,6 +76,16 @@ export default function Home() {
     const { orderCell } = MultiSig.createOrder(safeInfo.walletId, [message]);
     setBoc(new ton3.BOC([orderCell]).toString());
   }, [amount, recipient, safeInfo.walletId]);
+
+  const onClickSign = useCallback(async () => {
+    const [cell] = TonWeb.boc.Cell.fromBoc(boc);
+    const orderHash = TonWeb.utils.bytesToHex(await cell.hash());
+    const newSignature = await window.openmask.provider.send('ton_rawSign', {
+      data: orderHash,
+    });
+
+    setSignature(newSignature);
+  }, [boc]);
 
   return (
     <main className="flex min-h-screen flex-col items-center p-24 pt-6">
@@ -121,7 +139,12 @@ export default function Home() {
           <label>Order Cell BOC:</label>
           <input type="text" value={boc} />
         </div>
-        <button>Sign</button>
+        <button onClick={onClickSign}>Sign</button>
+        {signature && (
+          <span className="block max-w-[400px] mt-4 m-auto break-words">
+            {signature}
+          </span>
+        )}
       </section>
       <section>
         <button className="mb-6">Create Transfer</button>
