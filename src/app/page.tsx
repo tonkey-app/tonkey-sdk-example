@@ -104,6 +104,7 @@ export default function Home() {
       queryId,
       safeAddress,
     );
+    console.log(payload);
     const result = await signTransaction({ variables: { content: payload } });
     console.log(result);
   }, [chainId, ownerAddress, queryId, safeAddress, signTransaction, signature]);
