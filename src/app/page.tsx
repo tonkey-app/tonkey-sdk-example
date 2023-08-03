@@ -1,5 +1,13 @@
 'use client';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import TonWeb from 'tonweb';
+// import { MultiSig, MULTISIG_CODE_CELL } from 'tonkey-sdk';
+import { useWalletByAddress } from 'tonkey-gateway-typescript-sdk';
+
+const { Address } = TonWeb;
+
+const toRawAddress = (address: string) =>
+  address && address.length === 48 ? new Address(address).toString(false) : '';
 
 export default function Home() {
   const [chainId, setChainId] = useState<string>('-3');
@@ -35,6 +43,24 @@ export default function Home() {
   const [boc, setBoc] = useState<string>('');
   const [queryId, setQueryId] = useState<string>('');
 
+  const rawOwnerAddress = useMemo(
+    () => toRawAddress(ownerAddress),
+    [ownerAddress],
+  );
+
+  const {
+    safeInfo = {
+      owners: [],
+    },
+  } = useWalletByAddress(safeAddress, chainId);
+
+  const isOwner = useMemo(
+    () =>
+      rawOwnerAddress &&
+      safeInfo.owners.some(({ address }) => address.includes(rawOwnerAddress)),
+    [rawOwnerAddress, safeInfo.owners],
+  );
+
   return (
     <main className="flex min-h-screen flex-col items-center p-24 pt-6">
       <h1 className="text-5xl mb-2">Examples</h1>
@@ -63,7 +89,9 @@ export default function Home() {
             onChange={onChangeOwnerAddress}
           />
         </div>
-        <button>is Owner?</button>
+        <button>
+          {isOwner ? 'Safe address owner' : 'Not safe address owner'}
+        </button>
       </section>
       <section>
         <div>
