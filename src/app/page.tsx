@@ -89,9 +89,13 @@ export default function Home() {
             onChange={onChangeOwnerAddress}
           />
         </div>
-        <button>
-          {isOwner ? 'Safe address owner' : 'Not safe address owner'}
-        </button>
+
+        <div className="pl-2 bg-[#1f1f1f]/50 text-white">
+          Result:{' '}
+          {safeAddress && ownerAddress && isOwner
+            ? 'Safe address owner'
+            : 'Not safe address owner'}
+        </div>
       </section>
       <section>
         <div>
