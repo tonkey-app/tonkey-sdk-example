@@ -8,6 +8,7 @@ import {
   useCreateNativeTransfer,
   getTransferpayload,
   TransferParams,
+  useGetBalanceBySafeAddress,
 } from 'tonkey-gateway-typescript-sdk';
 
 const { Address } = TonWeb;
@@ -16,19 +17,23 @@ const toRawAddress = (address: string) =>
   address && address.length === 48 ? new Address(address).toString(false) : '';
 
 export default function Home() {
+  const [chainId, setChainId] = useState<string>('-3');
+  const [safeAddress, setSafeAddress] = useState<string>(
+    'EQADExxcNiblNmwHRdHPk4ZHx_bez9ylxNpJl_ZT_FLEsytZ',
+  );
   const [signature, setSignature] = useState<string>('');
   const [expiredTimeMs, setExpiredTimeMs] = useState<number>(0);
   const { createTransfer } = useCreateNativeTransfer();
+  const { data: balance, refetch } = useGetBalanceBySafeAddress(
+    safeAddress,
+    chainId,
+  );
 
-  const [chainId, setChainId] = useState<string>('-3');
   const onChangeChainId: React.InputHTMLAttributes<HTMLInputElement>['onChange'] =
     (event) => {
       setChainId(event.target.value);
     };
 
-  const [safeAddress, setSafeAddress] = useState<string>(
-    'EQADExxcNiblNmwHRdHPk4ZHx_bez9ylxNpJl_ZT_FLEsytZ',
-  );
   const onChangeSafeAddress: React.InputHTMLAttributes<HTMLInputElement>['onChange'] =
     (event) => {
       setSafeAddress(event.target.value);
@@ -168,6 +173,10 @@ export default function Home() {
     signature,
   ]);
 
+  const onClickGetBalance = useCallback(() => {
+    refetch();
+  }, [refetch]);
+
   return (
     <main className="flex min-h-screen flex-col items-center p-24 pt-6">
       <h1 className="text-5xl mb-2">Examples</h1>
@@ -240,9 +249,11 @@ export default function Home() {
           </div>
         </div>
         <div className="flex justify-between items-center gap-x-2">
-          <button className="m-0">Get Balance</button>
+          <button className="m-0" onClick={onClickGetBalance}>
+            Refetch Balance
+          </button>
           <div className="w-[250px] m-0 pl-2 leading-[34px] bg-[#1f1f1f]/50 text-white">
-            Balance:{' '}
+            Balance: {balance?.fiatTotal}
           </div>
         </div>
       </section>
