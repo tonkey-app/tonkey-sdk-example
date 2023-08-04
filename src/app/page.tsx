@@ -5,8 +5,9 @@ import * as ton3 from 'ton3-core';
 import { MultiSig } from 'tonkey-sdk';
 import {
   useWalletByAddress,
-  useSignTransaction,
-  getSignTransactionPayload,
+  useCreateNativeTransfer,
+  getTransferpayload,
+  TransferParams,
 } from 'tonkey-gateway-typescript-sdk';
 
 const { Address } = TonWeb;
@@ -16,7 +17,8 @@ const toRawAddress = (address: string) =>
 
 export default function Home() {
   const [signature, setSignature] = useState<string>('');
-  const { signTransaction } = useSignTransaction();
+  const [expiredTimeMs, setExpiredTimeMs] = useState<number>(0);
+  const { createTransfer } = useCreateNativeTransfer();
 
   const [chainId, setChainId] = useState<string>('-3');
   const onChangeChainId: React.InputHTMLAttributes<HTMLInputElement>['onChange'] =
@@ -79,11 +81,15 @@ export default function Home() {
 
   const onClickGeneratePayload = useCallback(() => {
     const message = MultiSig.createBaseCoinTransferMessage(recipient, amount);
-    const { orderCell, queryId } = MultiSig.createOrder(safeInfo.walletId, [
-      message,
-    ]);
+    const {
+      orderCell,
+      queryId: nextQueryId,
+      expiredTimeMs: nextExpiredTimeMs,
+    } = MultiSig.createOrder(safeInfo.walletId, [message]);
+
     setBoc(new ton3.BOC([orderCell]).toString());
-    setQueryId(queryId);
+    setQueryId(nextQueryId);
+    setExpiredTimeMs(nextExpiredTimeMs);
   }, [amount, recipient, safeInfo.walletId]);
 
   const onClickSign = useCallback(async () => {
@@ -97,31 +103,51 @@ export default function Home() {
   }, [boc]);
 
   const onClickCreateTransfer = useCallback(async () => {
-    const payload = await getSignTransactionPayload(
-      chainId,
-      signature,
-      ownerAddress,
+    const payload = await getTransferpayload({
+      signatures: [signature],
+      wallet: {
+        address: ownerAddress,
+        chain: chainId,
+      },
       queryId,
-      safeAddress,
-    );
+      safe: safeInfo,
+      recipient,
+      orderCellBoc: boc,
+      expiredTime: expiredTimeMs.toString(),
+      amount: new ton3.Coins(amount).toNano(),
+    } as unknown as TransferParams);
     console.log(payload);
     // {
     //   "chainId": "-3",
-    //   "ownerAddress": "kQBm6b0ORvMR2M876U7ps9Ul-i-BnmooVNb-qFwAw0TncwF0",
-    //   "signature": "2e38483977ee840fab529426306bcdcc050bf2bdacaebe4173ac976548b0f16d7b999ed14ae222f261af340579ef4a5c50591871200e22dc7a085184d16eec0b",
-    //   "queryId": "8a6392eb00000001",
-    //   "safeAddress": "EQADExxcNiblNmwHRdHPk4ZHx_bez9ylxNpJl_ZT_FLEsytZ"
+    //   "safeAddress": "0:03131C5C3626E5366C0745D1CF938647C7F6DECFDCA5C4DA4997F653FC52C4B3",
+    //   "transfer": {
+    //       "direction": "OUTGOING",
+    //       "recipient": "kQBm6b0ORvMR2M876U7ps9Ul-i-BnmooVNb-qFwAw0TncwF0",
+    //       "sender": "0:66E9BD0E46F311D8CF3BE94EE9B3D525FA2F819E6A2854D6FEA85C00C344E773",
+    //       "transferInfo": {}
+    //   },
+    //   "multiSigExecutionInfo": {
+    //       "orderCellBoc": "b5ee9c7241010201004400011a00005dc38a646ea3000000010301006462003374de87237988ec679df4a774d9ea92fd17c0cf35142a6b7f542e0061a273b9901f4000000000000000000000000000c4f71ba2",
+    //       "confirmations": [
+    //           "31b6a1f9fa00ca3c707373d221859a96037474767f40cdf7c932b86ed07897357b02117e6da9866edd182832299c3b39f2d76e9f526ef8b18c44eb4e5ba2d707"
+    //       ],
+    //       "confirmationsRequired": 1,
+    //       "confirmationsSubmitted": 1,
+    //       "executor": "",
+    //       "expiredAt": 2321837731000,
+    //       "queryId": "8a646ea300000001"
+    //   }
     // }
 
-    const result = await signTransaction({ variables: { content: payload } });
+    const result = await createTransfer({ variables: { content: payload } });
     console.log(result);
     // {
     //   "data": {
-    //       "signTransaction": {
+    //       "createTransfer": {
     //           "success": false,
     //           "error": {
-    //               "code": "10203003",
-    //               "detail": "tx was not found",
+    //               "code": "10203002",
+    //               "detail": "invalid confirmations format",
     //               "extra": "",
     //               "__typename": "Error"
     //           },
@@ -129,7 +155,18 @@ export default function Home() {
     //       }
     //   }
     // }
-  }, [chainId, ownerAddress, queryId, safeAddress, signTransaction, signature]);
+  }, [
+    amount,
+    boc,
+    chainId,
+    createTransfer,
+    expiredTimeMs,
+    ownerAddress,
+    queryId,
+    recipient,
+    safeInfo,
+    signature,
+  ]);
 
   return (
     <main className="flex min-h-screen flex-col items-center p-24 pt-6">
@@ -181,11 +218,11 @@ export default function Home() {
       <section>
         <div>
           <label>Order Cell BOC:</label>
-          <input type="text" value={boc} />
+          <input type="text" value={boc} readOnly />
         </div>
         <div>
           <label>Query Id:</label>
-          <input type="text" value={queryId} />
+          <input type="text" value={queryId} readOnly />
         </div>
         <button onClick={onClickSign}>Sign</button>
         {signature && (
