@@ -13,6 +13,10 @@ import {
 
 const { Address } = TonWeb;
 
+const connectOpenmask = async () => {
+  await window.openmask.provider.send('ton_requestAccounts');
+};
+
 const toRawAddress = (address: string) =>
   address && address.length === 48 ? new Address(address).toString(false) : '';
 
@@ -101,6 +105,7 @@ export default function Home() {
 
   const onClickSign = useCallback(async () => {
     if (orderCell) {
+      await connectOpenmask();
       setSignature(
         await MultiSig.signOrder(
           orderCell,
@@ -114,8 +119,22 @@ export default function Home() {
   }, [orderCell]);
 
   const onClickCreateTransfer = useCallback(async () => {
+    // important: fill in the signature in the index as same the owner index
+    //   owner index = owner's order in owner list
+    //   e.g. owner list = [owner 1, owner 2, owner 3]
+    //   owner 2 wanna create transaction
+    //   signatures = ["", SIGNATURE_OF_OWNER_2, ""]
+    const signatures = new Array(safeInfo.owners.length);
+    for (let i = 0, maxI = signatures.length; i < maxI; i++) {
+      if (safeInfo.owners[i].address === toRawAddress(ownerAddress)) {
+        signatures[i] = signature;
+      } else {
+        signatures[i] = '';
+      }
+    }
+
     const payload = await getTransferpayload({
-      signatures: [signature],
+      signatures,
       wallet: {
         address: ownerAddress,
         chain: chainId,
@@ -128,45 +147,9 @@ export default function Home() {
       amount: new ton3.Coins(amount).toNano(),
       tokenInfo: balance!.assets[0].tokenInfo,
     } as unknown as TransferParams);
-    console.log(payload);
-    // {
-    //   "chainId": "-3",
-    //   "safeAddress": "0:03131C5C3626E5366C0745D1CF938647C7F6DECFDCA5C4DA4997F653FC52C4B3",
-    //   "transfer": {
-    //       "direction": "OUTGOING",
-    //       "recipient": "kQBm6b0ORvMR2M876U7ps9Ul-i-BnmooVNb-qFwAw0TncwF0",
-    //       "sender": "0:66E9BD0E46F311D8CF3BE94EE9B3D525FA2F819E6A2854D6FEA85C00C344E773",
-    //       "transferInfo": {}
-    //   },
-    //   "multiSigExecutionInfo": {
-    //       "orderCellBoc": "b5ee9c7241010201004400011a00005dc38a69ca7c000000010301006462003374de87237988ec679df4a774d9ea92fd17c0cf35142a6b7f542e0061a273b9901f4000000000000000000000000000ada38547",
-    //       "confirmations": [
-    //           "84d05e0c704dc542a967b3ebb86ae95d5c3966b71b928493ad09962748531447510bb95ebe12da66d968bf9e38ac9ba71f903d0f2734f2e918f929d63e8bab08"
-    //       ],
-    //       "confirmationsRequired": 1,
-    //       "confirmationsSubmitted": 1,
-    //       "executor": "",
-    //       "expiredAt": 2322188924000,
-    //       "queryId": "8a69ca7c00000001"
-    //   }
-    // }
 
     const result = await createTransfer({ variables: { content: payload } });
     console.log(result);
-    // {
-    //   "data": {
-    //       "createTransfer": {
-    //           "success": false,
-    //           "error": {
-    //               "code": "10203002",
-    //               "detail": "invalid confirmations format",
-    //               "extra": "",
-    //               "__typename": "Error"
-    //           },
-    //           "__typename": "ResBody"
-    //       }
-    //   }
-    // }
   }, [
     amount,
     balance,
@@ -184,14 +167,6 @@ export default function Home() {
   const onClickGetBalance = useCallback(() => {
     refetch({ chainId, safeAddress });
   }, [chainId, refetch, safeAddress]);
-
-  useEffect(() => {
-    const connectOpenmask = async () => {
-      await window.openmask.provider.send('ton_requestAccounts');
-    };
-
-    connectOpenmask();
-  }, []);
 
   return (
     <main className="flex min-h-screen flex-col items-center p-24 pt-6">
