@@ -43,7 +43,7 @@ export default function Home() {
   const { data: transactionsInHistory, refetch: refetchTransactionsInHistory } =
     useTxHistory(safeAddress, chainId);
 
-  const onChangeChainId: React.InputHTMLAttributes<HTMLInputElement>['onChange'] =
+  const onChangeChainId: React.SelectHTMLAttributes<HTMLSelectElement>['onChange'] =
     (event) => {
       setChainId(event.target.value);
     };
@@ -220,7 +220,10 @@ export default function Home() {
       <section>
         <div>
           <label>Chain Id:</label>
-          <input type="text" value={chainId} onChange={onChangeChainId} />
+          <select onChange={onChangeChainId} value={chainId}>
+            <option value="-239">mainnet (-239)</option>
+            <option value="-3">testnet (-3)</option>
+          </select>
         </div>
         <div>
           <label>Safe Address:</label>
@@ -255,9 +258,9 @@ export default function Home() {
           <label>Amount:</label>
           <input type="text" value={amount} onChange={onChangeAmount} />
         </div>
-        <button onClick={onClickGeneratePayload}>Generate Payload</button>
-      </section>
-      <section>
+        <button onClick={onClickGeneratePayload} className="mt-3 mb-6">
+          Generate Payload
+        </button>
         <div>
           <label>Order Cell BOC:</label>
           <input type="text" value={boc} readOnly />
@@ -266,7 +269,9 @@ export default function Home() {
           <label>Query Id:</label>
           <input type="text" value={queryId} readOnly />
         </div>
-        <button onClick={onClickSign} className="mb-3">
+      </section>
+      <section>
+        <button onClick={onClickSign} className="mt-0 mb-3">
           Sign
         </button>
         {signature && (
@@ -279,13 +284,20 @@ export default function Home() {
           Create Transfer
         </button>
         {createTransferStatus && (
-          <span className="block max-w-[400px] mb-6 m-auto break-words">
+          <span className="max-w-[400px] m-auto break-words">
             {createTransferStatus}
           </span>
         )}
+        <br />
+        <button className="mb-3" onClick={onClickCreateTransfer}>
+          Execute Transfer
+        </button>
+      </section>
+
+      <section>
         <div className="flex justify-between items-center gap-x-2">
           <button className="m-0" onClick={onClickGetStatus}>
-            Get Status
+            Get Transaction Status
           </button>
           <div className="w-[250px] m-0 pl-2 leading-[34px] bg-[#1f1f1f]/50 text-white">
             Status: {transactionStatus}

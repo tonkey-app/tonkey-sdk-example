@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 section {
-  @apply w-[450px] p-5 mb-2 text-center border-solid border-[1px] border-black rounded-sm;
+  @apply w-[550px] p-5 mb-2 text-center border-solid border-[1px] border-black rounded-sm;
 }
 
 label {
@@ -14,7 +14,8 @@ div {
   @apply mb-4 flex justify-between;
 }
 
-input {
+input,
+select {
   @apply w-[250px] p-1 border-solid border-[1px] border-black;
 }
 
