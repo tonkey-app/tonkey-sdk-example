@@ -182,8 +182,8 @@ export default function Home() {
   ]);
 
   const onClickGetBalance = useCallback(() => {
-    refetch();
-  }, [refetch]);
+    refetch({ chainId, safeAddress });
+  }, [chainId, refetch, safeAddress]);
 
   useEffect(() => {
     const connectOpenmask = async () => {
