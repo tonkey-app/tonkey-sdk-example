@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+h2 {
+  @apply w-[550px] text-xl text-left font-semibold;
+}
+
 section {
   @apply w-[550px] p-5 mb-2 text-center border-solid border-[1px] border-black rounded-sm;
 }

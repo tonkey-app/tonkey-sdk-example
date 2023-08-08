@@ -34,12 +34,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <title>Examples</title>
+        <title>tonkey-sdk guidance</title>
       </head>
       <body className={inter.className}>
-        <Head>
-          <title>Examples</title>
-        </Head>
         <ApolloProvider client={client}>{children}</ApolloProvider>
       </body>
     </html>

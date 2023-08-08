@@ -192,11 +192,12 @@ export default function Home() {
 
   return (
     <main className="flex min-h-screen flex-col items-center p-24 pt-6">
-      <h1 className="text-5xl mb-2">Examples</h1>
+      <h1 className="text-5xl mb-2">tonkey-sdk guidance</h1>
       <p className="mb-4 text-red-500">
-        NOTE: You need to have openmask installed in your browser in order to
-        work
+        NOTE: You need to have extension OpenMask installed in your browser in
+        order to work
       </p>
+      <h2>Section one</h2>
       <section>
         <div>
           <label>Chain Id:</label>
@@ -229,6 +230,8 @@ export default function Home() {
             : 'Not safe address owner'}
         </div>
       </section>
+
+      <h2>Section two</h2>
       <section>
         <div>
           <label>Recipient:</label>
@@ -250,6 +253,8 @@ export default function Home() {
           <input type="text" value={queryId} readOnly />
         </div>
       </section>
+
+      <h2>Section three</h2>
       <section>
         <button onClick={onClickSign} className="mt-0 mb-3">
           Sign
@@ -270,6 +275,7 @@ export default function Home() {
         )}
       </section>
 
+      <h2>Section four</h2>
       <section>
         <div className="flex justify-between items-center gap-x-2">
           <button className="m-0" onClick={onClickGetStatus}>
