@@ -124,12 +124,10 @@ export default function Home() {
     //   e.g. owner list = [owner 1, owner 2, owner 3]
     //   owner 2 wanna create transaction
     //   signatures = ["", SIGNATURE_OF_OWNER_2, ""]
-    const signatures = new Array(safeInfo.owners.length);
+    const signatures = new Array(safeInfo.owners.length).fill('');
     for (let i = 0, maxI = signatures.length; i < maxI; i++) {
       if (safeInfo.owners[i].address === toRawAddress(ownerAddress)) {
         signatures[i] = signature;
-      } else {
-        signatures[i] = '';
       }
     }
 
