@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import TonWeb from 'tonweb';
 import * as ton3 from 'ton3-core';
 import { MultiSig } from 'tonkey-sdk';
@@ -126,6 +126,7 @@ export default function Home() {
       orderCellBoc: boc,
       expiredTime: expiredTimeMs.toString(),
       amount: new ton3.Coins(amount).toNano(),
+      tokenInfo: balance!.assets[0].tokenInfo,
     } as unknown as TransferParams);
     console.log(payload);
     // {
@@ -168,6 +169,7 @@ export default function Home() {
     // }
   }, [
     amount,
+    balance,
     boc,
     chainId,
     createTransfer,
@@ -182,6 +184,14 @@ export default function Home() {
   const onClickGetBalance = useCallback(() => {
     refetch();
   }, [refetch]);
+
+  useEffect(() => {
+    const connectOpenmask = async () => {
+      await window.openmask.provider.send('ton_requestAccounts');
+    };
+
+    connectOpenmask();
+  }, []);
 
   return (
     <main className="flex min-h-screen flex-col items-center p-24 pt-6">
