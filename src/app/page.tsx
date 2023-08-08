@@ -263,11 +263,10 @@ export default function Home() {
           Create Transfer
         </button>
         {createTransferStatus && (
-          <span className="max-w-[400px] m-auto break-words">
+          <span className="block max-w-[400px] m-auto break-words">
             {createTransferStatus}
           </span>
         )}
-        <br />
       </section>
 
       <section>
