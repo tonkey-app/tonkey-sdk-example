@@ -9,6 +9,8 @@ import {
   getTransferpayload,
   TransferParams,
   useGetBalanceBySafeAddress,
+  useTxQueue,
+  useTxHistory,
 } from 'tonkey-gateway-typescript-sdk';
 
 const { Address } = TonWeb;
@@ -26,12 +28,20 @@ export default function Home() {
     'EQADExxcNiblNmwHRdHPk4ZHx_bez9ylxNpJl_ZT_FLEsytZ',
   );
   const [signature, setSignature] = useState<string>('');
+  const [createTransferStatus, setCreateTransferStatus] = useState<string>('');
   const [expiredTimeMs, setExpiredTimeMs] = useState<number>(0);
+  const [isGettingStatus, setIsGettingStatus] = useState<boolean>(false);
+  const [transactionStatus, setTransactionStatus] = useState<string>('');
+
   const { createTransfer } = useCreateNativeTransfer();
   const { data: balance, refetch } = useGetBalanceBySafeAddress(
     safeAddress,
     chainId,
   );
+  const { data: transactionsInQueue, refetch: refetchTransactionsInQueue } =
+    useTxQueue(safeAddress, chainId);
+  const { data: transactionsInHistory, refetch: refetchTransactionsInHistory } =
+    useTxHistory(safeAddress, chainId);
 
   const onChangeChainId: React.InputHTMLAttributes<HTMLInputElement>['onChange'] =
     (event) => {
@@ -120,10 +130,10 @@ export default function Home() {
 
   const onClickCreateTransfer = useCallback(async () => {
     // important: fill in the signature in the index as same the owner index
-    //   owner index = owner's order in owner list
-    //   e.g. owner list = [owner 1, owner 2, owner 3]
-    //   owner 2 wanna create transaction
-    //   signatures = ["", SIGNATURE_OF_OWNER_2, ""]
+    // owner index = owner's order in owner list
+    // e.g. owner list = [owner 1, owner 2, owner 3]
+    // owner 2 wanna create transaction
+    // signatures = ["", SIGNATURE_OF_OWNER_2, ""]
     const signatures = new Array(safeInfo.owners.length).fill('');
     for (let i = 0, maxI = signatures.length; i < maxI; i++) {
       if (safeInfo.owners[i].address === toRawAddress(ownerAddress)) {
@@ -147,7 +157,9 @@ export default function Home() {
     } as unknown as TransferParams);
 
     const result = await createTransfer({ variables: { content: payload } });
-    console.log(result);
+    setCreateTransferStatus(
+      result.data?.createTransfer.success ? 'Success' : 'Fail',
+    );
   }, [
     amount,
     balance,
@@ -165,6 +177,38 @@ export default function Home() {
   const onClickGetBalance = useCallback(() => {
     refetch({ chainId, safeAddress });
   }, [chainId, refetch, safeAddress]);
+
+  const onClickGetStatus = useCallback(() => {
+    setIsGettingStatus(true);
+    refetchTransactionsInQueue();
+    refetchTransactionsInHistory();
+  }, [refetchTransactionsInHistory, refetchTransactionsInQueue]);
+
+  useEffect(() => {
+    if (isGettingStatus) {
+      for (const transaction of transactionsInQueue) {
+        const {
+          summary: { status, multiSigExecutionInfo },
+        } = transaction;
+
+        if (queryId === multiSigExecutionInfo?.queryId) {
+          setTransactionStatus(status);
+        }
+      }
+
+      for (const transaction of transactionsInHistory) {
+        const {
+          details,
+          summary: { multiSigExecutionInfo, status },
+        } = transaction;
+
+        if (details) {
+          if (queryId === multiSigExecutionInfo?.queryId)
+            setTransactionStatus(status);
+        }
+      }
+    }
+  }, [isGettingStatus, queryId, transactionsInHistory, transactionsInQueue]);
 
   return (
     <main className="flex min-h-screen flex-col items-center p-24 pt-6">
@@ -222,19 +266,29 @@ export default function Home() {
           <label>Query Id:</label>
           <input type="text" value={queryId} readOnly />
         </div>
-        <button onClick={onClickSign}>Sign</button>
+        <button onClick={onClickSign} className="mb-3">
+          Sign
+        </button>
         {signature && (
-          <span className="block max-w-[400px] mt-4 m-auto break-words">
+          <span className="max-w-[400px] mt-4 m-auto break-words">
             {signature}
           </span>
         )}
-        <button className="mb-6" onClick={onClickCreateTransfer}>
+        <br />
+        <button className="mb-3" onClick={onClickCreateTransfer}>
           Create Transfer
         </button>
+        {createTransferStatus && (
+          <span className="block max-w-[400px] mb-6 m-auto break-words">
+            {createTransferStatus}
+          </span>
+        )}
         <div className="flex justify-between items-center gap-x-2">
-          <button className="m-0">Get Status</button>
+          <button className="m-0" onClick={onClickGetStatus}>
+            Get Status
+          </button>
           <div className="w-[250px] m-0 pl-2 leading-[34px] bg-[#1f1f1f]/50 text-white">
-            Status:{' '}
+            Status: {transactionStatus}
           </div>
         </div>
         <div className="flex justify-between items-center gap-x-2">
