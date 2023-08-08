@@ -185,6 +185,8 @@ export default function Home() {
           setTransactionStatus(status);
         }
       }
+
+      setIsGettingStatus(false);
     }
   }, [isGettingStatus, queryId, transactionsInQueue]);
 
