@@ -190,8 +190,6 @@ export default function Home() {
     }
   }, [isGettingStatus, queryId, transactionsInQueue]);
 
-  console.log(chainId, safeAddress);
-
   return (
     <main className="flex min-h-screen flex-col items-center p-24 pt-6">
       <h1 className="text-5xl mb-2">Examples</h1>
