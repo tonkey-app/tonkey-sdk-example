@@ -62,6 +62,7 @@ export default function Home() {
     };
 
   const [boc, setBoc] = useState<string>('');
+  const [orderCell, setOrderCell] = useState<ton3.Cell>();
   const [queryId, setQueryId] = useState<string>('');
 
   const rawOwnerAddress = useMemo(
@@ -92,20 +93,25 @@ export default function Home() {
       expiredTimeMs: nextExpiredTimeMs,
     } = MultiSig.createOrder(safeInfo.walletId, [message]);
 
+    setOrderCell(orderCell);
     setBoc(new ton3.BOC([orderCell]).toString());
     setQueryId(nextQueryId);
     setExpiredTimeMs(nextExpiredTimeMs);
   }, [amount, recipient, safeInfo.walletId]);
 
   const onClickSign = useCallback(async () => {
-    const [cell] = TonWeb.boc.Cell.fromBoc(boc);
-    const orderHash = TonWeb.utils.bytesToHex(await cell.hash());
-    const newSignature = await window.openmask.provider.send('ton_rawSign', {
-      data: orderHash,
-    });
-
-    setSignature(newSignature);
-  }, [boc]);
+    if (orderCell) {
+      setSignature(
+        await MultiSig.signOrder(
+          orderCell,
+          async (orderCellHash) =>
+            await window.openmask.provider.send('ton_rawSign', {
+              data: orderCellHash,
+            }),
+        ),
+      );
+    }
+  }, [orderCell]);
 
   const onClickCreateTransfer = useCallback(async () => {
     const payload = await getTransferpayload({
@@ -132,15 +138,15 @@ export default function Home() {
     //       "transferInfo": {}
     //   },
     //   "multiSigExecutionInfo": {
-    //       "orderCellBoc": "b5ee9c7241010201004400011a00005dc38a646ea3000000010301006462003374de87237988ec679df4a774d9ea92fd17c0cf35142a6b7f542e0061a273b9901f4000000000000000000000000000c4f71ba2",
+    //       "orderCellBoc": "b5ee9c7241010201004400011a00005dc38a69ca7c000000010301006462003374de87237988ec679df4a774d9ea92fd17c0cf35142a6b7f542e0061a273b9901f4000000000000000000000000000ada38547",
     //       "confirmations": [
-    //           "31b6a1f9fa00ca3c707373d221859a96037474767f40cdf7c932b86ed07897357b02117e6da9866edd182832299c3b39f2d76e9f526ef8b18c44eb4e5ba2d707"
+    //           "84d05e0c704dc542a967b3ebb86ae95d5c3966b71b928493ad09962748531447510bb95ebe12da66d968bf9e38ac9ba71f903d0f2734f2e918f929d63e8bab08"
     //       ],
     //       "confirmationsRequired": 1,
     //       "confirmationsSubmitted": 1,
     //       "executor": "",
-    //       "expiredAt": 2321837731000,
-    //       "queryId": "8a646ea300000001"
+    //       "expiredAt": 2322188924000,
+    //       "queryId": "8a69ca7c00000001"
     //   }
     // }
 
