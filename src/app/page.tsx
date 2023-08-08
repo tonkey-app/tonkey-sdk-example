@@ -23,10 +23,8 @@ const toRawAddress = (address: string) =>
   address && address.length === 48 ? new Address(address).toString(false) : '';
 
 export default function Home() {
-  const [chainId, setChainId] = useState<string>('-3');
-  const [safeAddress, setSafeAddress] = useState<string>(
-    'EQADExxcNiblNmwHRdHPk4ZHx_bez9ylxNpJl_ZT_FLEsytZ',
-  );
+  const [chainId, setChainId] = useState<string>('-239');
+  const [safeAddress, setSafeAddress] = useState<string>('');
   const [signature, setSignature] = useState<string>('');
   const [createTransferStatus, setCreateTransferStatus] = useState<string>('');
   const [expiredTimeMs, setExpiredTimeMs] = useState<number>(0);
@@ -51,23 +49,19 @@ export default function Home() {
       setSafeAddress(event.target.value);
     };
 
-  const [ownerAddress, setOwnerAddress] = useState<string>(
-    'kQBm6b0ORvMR2M876U7ps9Ul-i-BnmooVNb-qFwAw0TncwF0',
-  );
+  const [ownerAddress, setOwnerAddress] = useState<string>('');
   const onChangeOwnerAddress: React.InputHTMLAttributes<HTMLInputElement>['onChange'] =
     (event) => {
       setOwnerAddress(event.target.value);
     };
 
-  const [recipient, setRecipient] = useState<string>(
-    'kQBm6b0ORvMR2M876U7ps9Ul-i-BnmooVNb-qFwAw0TncwF0',
-  );
+  const [recipient, setRecipient] = useState<string>('');
   const onChangeRecipient: React.InputHTMLAttributes<HTMLInputElement>['onChange'] =
     (event) => {
       setRecipient(event.target.value);
     };
 
-  const [amount, setAmount] = useState<string>('0.000001');
+  const [amount, setAmount] = useState<string>('');
   const onChangeAmount: React.InputHTMLAttributes<HTMLInputElement>['onChange'] =
     (event) => {
       setAmount(event.target.value);
