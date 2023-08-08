@@ -40,8 +40,6 @@ export default function Home() {
   );
   const { data: transactionsInQueue, refetch: refetchTransactionsInQueue } =
     useTxQueue(safeAddress, chainId);
-  const { data: transactionsInHistory, refetch: refetchTransactionsInHistory } =
-    useTxHistory(safeAddress, chainId);
 
   const onChangeChainId: React.SelectHTMLAttributes<HTMLSelectElement>['onChange'] =
     (event) => {
@@ -181,8 +179,7 @@ export default function Home() {
   const onClickGetStatus = useCallback(() => {
     setIsGettingStatus(true);
     refetchTransactionsInQueue();
-    refetchTransactionsInHistory();
-  }, [refetchTransactionsInHistory, refetchTransactionsInQueue]);
+  }, [refetchTransactionsInQueue]);
 
   useEffect(() => {
     if (isGettingStatus) {
@@ -195,20 +192,8 @@ export default function Home() {
           setTransactionStatus(status);
         }
       }
-
-      for (const transaction of transactionsInHistory) {
-        const {
-          details,
-          summary: { multiSigExecutionInfo, status },
-        } = transaction;
-
-        if (details) {
-          if (queryId === multiSigExecutionInfo?.queryId)
-            setTransactionStatus(status);
-        }
-      }
     }
-  }, [isGettingStatus, queryId, transactionsInHistory, transactionsInQueue]);
+  }, [isGettingStatus, queryId, transactionsInQueue]);
 
   return (
     <main className="flex min-h-screen flex-col items-center p-24 pt-6">
@@ -289,9 +274,6 @@ export default function Home() {
           </span>
         )}
         <br />
-        <button className="mb-3" onClick={onClickCreateTransfer}>
-          Execute Transfer
-        </button>
       </section>
 
       <section>
