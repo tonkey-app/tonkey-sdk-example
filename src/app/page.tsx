@@ -188,9 +188,7 @@ export default function Home() {
     }
   }, [isGettingStatus, queryId, transactionsInQueue]);
 
-  useEffect(() => {
-    refetchBalance({ chainId, safeAddress });
-  }, [chainId, refetchBalance, safeAddress]);
+  console.log(chainId, safeAddress);
 
   return (
     <main className="flex min-h-screen flex-col items-center p-24 pt-6">
