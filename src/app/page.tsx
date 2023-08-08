@@ -10,7 +10,6 @@ import {
   TransferParams,
   useGetBalanceBySafeAddress,
   useTxQueue,
-  useTxHistory,
 } from 'tonkey-gateway-typescript-sdk';
 
 const { Address } = TonWeb;
@@ -32,7 +31,7 @@ export default function Home() {
   const [transactionStatus, setTransactionStatus] = useState<string>('');
 
   const { createTransfer } = useCreateNativeTransfer();
-  const { data: balance, refetch } = useGetBalanceBySafeAddress(
+  const { data: balance, refetch: refetchBalance } = useGetBalanceBySafeAddress(
     safeAddress,
     chainId,
   );
@@ -167,8 +166,8 @@ export default function Home() {
   ]);
 
   const onClickGetBalance = useCallback(() => {
-    refetch({ chainId, safeAddress });
-  }, [chainId, refetch, safeAddress]);
+    refetchBalance({ chainId, safeAddress });
+  }, [chainId, refetchBalance, safeAddress]);
 
   const onClickGetStatus = useCallback(() => {
     setIsGettingStatus(true);
@@ -188,6 +187,10 @@ export default function Home() {
       }
     }
   }, [isGettingStatus, queryId, transactionsInQueue]);
+
+  useEffect(() => {
+    refetchBalance({ chainId, safeAddress });
+  }, [chainId, refetchBalance, safeAddress]);
 
   return (
     <main className="flex min-h-screen flex-col items-center p-24 pt-6">
