@@ -1,113 +1,299 @@
-import Image from 'next/image';
+'use client';
+import { useState, useMemo, useCallback, useEffect } from 'react';
+import TonWeb from 'tonweb';
+import * as ton3 from 'ton3-core';
+import { MultiSig } from 'tonkey-sdk';
+import {
+  useWalletByAddress,
+  useCreateNativeTransfer,
+  getTransferpayload,
+  TransferParams,
+  useGetBalanceBySafeAddress,
+  useTxQueue,
+} from 'tonkey-gateway-typescript-sdk';
+
+const { Address } = TonWeb;
+
+const connectOpenmask = async () => {
+  await window.openmask.provider.send('ton_requestAccounts');
+};
+
+const toRawAddress = (address: string) =>
+  address && address.length === 48 ? new Address(address).toString(false) : '';
 
 export default function Home() {
+  const [chainId, setChainId] = useState<string>('-239');
+  const [safeAddress, setSafeAddress] = useState<string>('');
+  const [signature, setSignature] = useState<string>('');
+  const [createTransferStatus, setCreateTransferStatus] = useState<string>('');
+  const [expiredTimeMs, setExpiredTimeMs] = useState<number>(0);
+  const [isGettingStatus, setIsGettingStatus] = useState<boolean>(false);
+  const [transactionStatus, setTransactionStatus] = useState<string>('');
+
+  const { createTransfer } = useCreateNativeTransfer();
+  const { data: balance, refetch: refetchBalance } = useGetBalanceBySafeAddress(
+    safeAddress,
+    chainId,
+  );
+  const { data: transactionsInQueue, refetch: refetchTransactionsInQueue } =
+    useTxQueue(safeAddress, chainId);
+
+  const onChangeChainId: React.SelectHTMLAttributes<HTMLSelectElement>['onChange'] =
+    (event) => {
+      setChainId(event.target.value);
+    };
+
+  const onChangeSafeAddress: React.InputHTMLAttributes<HTMLInputElement>['onChange'] =
+    (event) => {
+      setSafeAddress(event.target.value);
+    };
+
+  const [ownerAddress, setOwnerAddress] = useState<string>('');
+  const onChangeOwnerAddress: React.InputHTMLAttributes<HTMLInputElement>['onChange'] =
+    (event) => {
+      setOwnerAddress(event.target.value);
+    };
+
+  const [recipient, setRecipient] = useState<string>('');
+  const onChangeRecipient: React.InputHTMLAttributes<HTMLInputElement>['onChange'] =
+    (event) => {
+      setRecipient(event.target.value);
+    };
+
+  const [amount, setAmount] = useState<string>('');
+  const onChangeAmount: React.InputHTMLAttributes<HTMLInputElement>['onChange'] =
+    (event) => {
+      setAmount(event.target.value);
+    };
+
+  const [boc, setBoc] = useState<string>('');
+  const [orderCell, setOrderCell] = useState<ton3.Cell>();
+  const [queryId, setQueryId] = useState<string>('');
+
+  const rawOwnerAddress = useMemo(
+    () => toRawAddress(ownerAddress),
+    [ownerAddress],
+  );
+
+  const {
+    safeInfo = {
+      owners: [],
+      walletId: 0,
+      address: '',
+    },
+  } = useWalletByAddress(safeAddress, chainId);
+
+  const isOwner = useMemo(
+    () =>
+      rawOwnerAddress &&
+      safeInfo.owners.some(({ address }) => address.includes(rawOwnerAddress)),
+    [rawOwnerAddress, safeInfo.owners],
+  );
+
+  const onClickGeneratePayload = useCallback(() => {
+    const message = MultiSig.createBaseCoinTransferMessage(recipient, amount);
+    const {
+      orderCell,
+      queryId: nextQueryId,
+      expiredTimeMs: nextExpiredTimeMs,
+    } = MultiSig.createOrder(safeInfo.walletId, [message]);
+
+    setOrderCell(orderCell);
+    setBoc(new ton3.BOC([orderCell]).toString());
+    setQueryId(nextQueryId);
+    setExpiredTimeMs(nextExpiredTimeMs);
+  }, [amount, recipient, safeInfo.walletId]);
+
+  const onClickSign = useCallback(async () => {
+    if (orderCell) {
+      await connectOpenmask();
+      setSignature(
+        await MultiSig.signOrder(
+          orderCell,
+          async (orderCellHash) =>
+            await window.openmask.provider.send('ton_rawSign', {
+              data: orderCellHash,
+            }),
+        ),
+      );
+    }
+  }, [orderCell]);
+
+  const onClickCreateTransfer = useCallback(async () => {
+    // important: fill in the signature in the index as same the owner index
+    // owner index = owner's order in owner list
+    // e.g. owner list = [owner 1, owner 2, owner 3]
+    // owner 2 wanna create transaction
+    // signatures = ["", SIGNATURE_OF_OWNER_2, ""]
+    const signatures = new Array(safeInfo.owners.length).fill('');
+    for (let i = 0, maxI = signatures.length; i < maxI; i++) {
+      if (safeInfo.owners[i].address === toRawAddress(ownerAddress)) {
+        signatures[i] = signature;
+      }
+    }
+
+    const payload = await getTransferpayload({
+      signatures,
+      wallet: {
+        address: ownerAddress,
+        chain: chainId,
+      },
+      queryId,
+      safe: safeInfo,
+      recipient,
+      orderCellBoc: boc,
+      expiredTime: expiredTimeMs.toString(),
+      amount: new ton3.Coins(amount).toNano(),
+      tokenInfo: balance!.assets[0].tokenInfo,
+    } as unknown as TransferParams);
+
+    const result = await createTransfer({ variables: { content: payload } });
+    setCreateTransferStatus(
+      result.data?.createTransfer.success ? 'Success' : 'Fail',
+    );
+  }, [
+    amount,
+    balance,
+    boc,
+    chainId,
+    createTransfer,
+    expiredTimeMs,
+    ownerAddress,
+    queryId,
+    recipient,
+    safeInfo,
+    signature,
+  ]);
+
+  const onClickGetBalance = useCallback(() => {
+    refetchBalance({ chainId, safeAddress });
+  }, [chainId, refetchBalance, safeAddress]);
+
+  const onClickGetStatus = useCallback(() => {
+    setIsGettingStatus(true);
+    refetchTransactionsInQueue();
+  }, [refetchTransactionsInQueue]);
+
+  useEffect(() => {
+    if (isGettingStatus) {
+      for (const transaction of transactionsInQueue) {
+        const {
+          summary: { status, multiSigExecutionInfo },
+        } = transaction;
+
+        if (queryId === multiSigExecutionInfo?.queryId) {
+          setTransactionStatus(status);
+        }
+      }
+
+      setIsGettingStatus(false);
+    }
+  }, [isGettingStatus, queryId, transactionsInQueue]);
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">src/app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+    <main className="flex min-h-screen flex-col items-center p-24 pt-6">
+      <h1 className="text-5xl mb-2">tonkey-sdk guidance</h1>
+      <p className="mb-4 text-red-500">
+        NOTE: You need to have extension OpenMask installed in your browser in
+        order to work
+      </p>
+      <h2>Section one</h2>
+      <section>
+        <div>
+          <label>Chain Id:</label>
+          <select onChange={onChangeChainId} value={chainId}>
+            <option value="-239">mainnet (-239)</option>
+            <option value="-3">testnet (-3)</option>
+          </select>
         </div>
-      </div>
+        <div>
+          <label>Safe Address:</label>
+          <input
+            type="text"
+            value={safeAddress}
+            onChange={onChangeSafeAddress}
+          />
+        </div>
+        <div>
+          <label>Owner Address:</label>
+          <input
+            type="text"
+            value={ownerAddress}
+            onChange={onChangeOwnerAddress}
+          />
+        </div>
 
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 before:lg:h-[360px] z-[-1]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
+        <div className="pl-2 bg-[#1f1f1f]/50 text-white">
+          Result:{' '}
+          {safeAddress && ownerAddress && isOwner
+            ? 'Safe address owner'
+            : 'Not safe address owner'}
+        </div>
+      </section>
 
-      <div className="mb-32 grid text-center lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
+      <h2>Section two</h2>
+      <section>
+        <div>
+          <label>Recipient:</label>
+          <input type="text" value={recipient} onChange={onChangeRecipient} />
+        </div>
+        <div>
+          <label>Amount:</label>
+          <input type="text" value={amount} onChange={onChangeAmount} />
+        </div>
+        <button onClick={onClickGeneratePayload} className="mt-3 mb-6">
+          Generate Payload
+        </button>
+        <div>
+          <label>Order Cell BOC:</label>
+          <input type="text" value={boc} readOnly />
+        </div>
+        <div>
+          <label>Query Id:</label>
+          <input type="text" value={queryId} readOnly />
+        </div>
+      </section>
 
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
+      <h2>Section three</h2>
+      <section>
+        <button onClick={onClickSign} className="mt-0 mb-3">
+          Sign
+        </button>
+        {signature && (
+          <span className="max-w-[400px] mt-4 m-auto break-words">
+            {signature}
+          </span>
+        )}
+        <br />
+        <button className="mb-3" onClick={onClickCreateTransfer}>
+          Create Transfer
+        </button>
+        {createTransferStatus && (
+          <span className="block max-w-[400px] m-auto break-words">
+            {createTransferStatus}
+          </span>
+        )}
+      </section>
 
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Explore the Next.js 13 playground.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
+      <h2>Section four</h2>
+      <section>
+        <div className="flex justify-between items-center gap-x-2">
+          <button className="m-0" onClick={onClickGetStatus}>
+            Get Transaction Status
+          </button>
+          <div className="w-[250px] m-0 pl-2 leading-[34px] bg-[#1f1f1f]/50 text-white">
+            Status: {transactionStatus}
+          </div>
+        </div>
+        <div className="flex justify-between items-center gap-x-2">
+          <button className="m-0" onClick={onClickGetBalance}>
+            Refetch Balance
+          </button>
+          <div className="w-[250px] m-0 pl-2 leading-[34px] bg-[#1f1f1f]/50 text-white">
+            Balance: {balance?.fiatTotal}
+          </div>
+        </div>
+      </section>
     </main>
   );
 }

@@ -1,34 +1,30 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# [tonkey-sdk](https://www.npmjs.com/package/tonkey-sdk) guidance
 
-## Getting Started
+## Getting started
 
-First, run the development server:
+> Navigate to [website](https://tonkey-questbook-example.netlify.app/)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-```
+### Step one
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+1. Fill all fields in `Section one`
+2. The gray rectangle in the bottom of the section will show the `Owner address` is the owner of `Safe Address` or not
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Step two
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+1. Fill in field `Recipient` and `Amount`(should bigger then zero) in `Section two`
+2. Click button `Generate Payload`
+3. `tonkeu-sdk` will generate payload base on above input and autofill field `Order Cell BOC` and `Query Id`
 
-## Learn More
+### Step three
 
-To learn more about Next.js, take a look at the following resources:
+1. Click button `Sign` in `Section three`
+2. Extension `OpenMask` will popup and ask for **Connect** (if you haven't connect before) and **Sign**
+3. The signature will appear promptly below the button `Sign`
+4. Click button `Create Transfer`
+5. `tonkeu-sdk` will create transfer with above information
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Step four
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+- Click button `Get Transaction Status` will get latest status of transaction and show up in the gray rectangle on the right
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+- Click button `Refetch Balance` will get current balance and reveal in the gray rectangle on the right
