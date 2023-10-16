@@ -10,6 +10,7 @@ import {
   TransferParams,
   useGetBalanceBySafeAddress,
   useTxQueue,
+  useTxHistory,
 } from 'tonkey-gateway-typescript-sdk';
 
 const { Address } = TonWeb;
@@ -38,6 +39,9 @@ export default function Home() {
   const { data: transactionsInQueue, refetch: refetchTransactionsInQueue } =
     useTxQueue(safeAddress, chainId);
 
+  const { data: transactionsInHistory, refetch: refetchTransactionsInHistory } =
+    useTxHistory(safeAddress, chainId);
+
   const onChangeChainId: React.SelectHTMLAttributes<HTMLSelectElement>['onChange'] =
     (event) => {
       setChainId(event.target.value);
@@ -64,6 +68,12 @@ export default function Home() {
   const onChangeAmount: React.InputHTMLAttributes<HTMLInputElement>['onChange'] =
     (event) => {
       setAmount(event.target.value);
+    };
+
+  const [remark, setRemark] = useState<string>('');
+  const onChangeRemark: React.InputHTMLAttributes<HTMLInputElement>['onChange'] =
+    (event) => {
+      setRemark(event.target.value);
     };
 
   const [boc, setBoc] = useState<string>('');
@@ -96,13 +106,15 @@ export default function Home() {
       orderCell,
       queryId: nextQueryId,
       expiredTimeMs: nextExpiredTimeMs,
-    } = MultiSig.createOrder(safeInfo.walletId, [message]);
+    } = MultiSig.createOrder(safeInfo.walletId, message, {
+      remark
+    });
 
     setOrderCell(orderCell);
     setBoc(new ton3.BOC([orderCell]).toString());
     setQueryId(nextQueryId);
     setExpiredTimeMs(nextExpiredTimeMs);
-  }, [amount, recipient, safeInfo.walletId]);
+  }, [remark, amount, recipient, safeInfo.walletId]);
 
   const onClickSign = useCallback(async () => {
     if (orderCell) {
@@ -142,6 +154,7 @@ export default function Home() {
       safe: safeInfo,
       recipient,
       orderCellBoc: boc,
+      remark,
       expiredTime: expiredTimeMs.toString(),
       amount: new ton3.Coins(amount).toNano(),
       tokenInfo: balance!.assets[0].tokenInfo,
@@ -163,6 +176,7 @@ export default function Home() {
     recipient,
     safeInfo,
     signature,
+    remark
   ]);
 
   const onClickGetBalance = useCallback(() => {
@@ -172,7 +186,8 @@ export default function Home() {
   const onClickGetStatus = useCallback(() => {
     setIsGettingStatus(true);
     refetchTransactionsInQueue();
-  }, [refetchTransactionsInQueue]);
+    refetchTransactionsInHistory();
+  }, [refetchTransactionsInQueue, refetchTransactionsInHistory]);
 
   useEffect(() => {
     if (isGettingStatus) {
@@ -186,9 +201,19 @@ export default function Home() {
         }
       }
 
+      for (const transaction of transactionsInHistory) {
+        const {
+          summary: { status, multiSigExecutionInfo },
+        } = transaction;
+
+        if (queryId === multiSigExecutionInfo?.queryId) {
+          setTransactionStatus(status);
+        }
+      }
+
       setIsGettingStatus(false);
     }
-  }, [isGettingStatus, queryId, transactionsInQueue]);
+  }, [isGettingStatus, queryId, transactionsInQueue, transactionsInHistory]);
 
   return (
     <main className="flex min-h-screen flex-col items-center p-24 pt-6">
@@ -240,6 +265,10 @@ export default function Home() {
         <div>
           <label>Amount:</label>
           <input type="text" value={amount} onChange={onChangeAmount} />
+        </div>
+        <div>
+          <label>Remark:</label>
+          <input type="text" value={remark} onChange={onChangeRemark} />
         </div>
         <button onClick={onClickGeneratePayload} className="mt-3 mb-6">
           Generate Payload
