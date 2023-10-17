@@ -11,7 +11,7 @@
 
 ### Step two
 
-1. Fill in field `Recipient` and `Amount`(should bigger then zero) in `Section two`
+1. Fill in field `Recipient`, `Amount`(should bigger then zero) and `Remark` (optional) in `Section two`
 2. Click button `Generate Payload`
 3. `tonkeu-sdk` will generate payload base on above input and autofill field `Order Cell BOC` and `Query Id`
 
