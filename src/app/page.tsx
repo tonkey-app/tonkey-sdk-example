@@ -101,13 +101,17 @@ export default function Home() {
   );
 
   const onClickGeneratePayload = useCallback(() => {
-    const message = MultiSig.createBaseCoinTransferMessage(recipient, amount);
+    const message = MultiSig.createBaseCoinTransferMessage(
+      recipient,
+      amount,
+      remark ? remark : undefined,
+    );
     const {
       orderCell,
       queryId: nextQueryId,
       expiredTimeMs: nextExpiredTimeMs,
     } = MultiSig.createOrder(safeInfo.walletId, message, {
-      remark
+      remark,
     });
 
     setOrderCell(orderCell);
@@ -176,7 +180,7 @@ export default function Home() {
     recipient,
     safeInfo,
     signature,
-    remark
+    remark,
   ]);
 
   const onClickGetBalance = useCallback(() => {
